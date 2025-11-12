@@ -1,0 +1,40 @@
+# Build, Distributions und temporäre Dateien
+build/
+dist/
+*.spec
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environments
+.venv/
+.env/
+env/
+venv/
+ENV/
+
+# RechnungsTool spezifische Builds
+RechnungsTool_Distribution/
+RechnungsTool_Distribution_ARM64/
+RechnungsTool_Distribution_Intel/
+*.dmg
+*.pkg
+
+# Temporäre und Cache-Dateien
+*.tmp
+.DS_Store
+*.log
+*.bak
+*.orig
+temp_invoice_*.xml
+test_*.xml
+
+# IDE und Editor Dateien
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ZIP-Dateien von Builds
+*-macOS.zip

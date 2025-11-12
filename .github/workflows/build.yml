@@ -1,0 +1,191 @@
+name: Build RechnungsTool für alle macOS Architekturen
+
+on:
+  push:
+    tags: ['v*']     # Automatische Builds bei Version-Tags
+    branches: [main] # Auch bei main-Branch pushes (für Development)
+  pull_request:
+    branches: [main] # Bei Pull Requests
+  workflow_dispatch: # Manueller Trigger über GitHub UI
+
+jobs:
+  build-intel:
+    name: "🖥️ Intel macOS Build (x86_64)"
+    runs-on: macos-13  # Intel-basierter Runner
+    
+    steps:
+    - name: "📥 Checkout Repository"
+      uses: actions/checkout@v4
+      
+    - name: "🐍 Setup Python 3.11"
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        architecture: 'x64'
+        
+    - name: "📦 Install Dependencies"
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+        
+    - name: "🔨 Build Intel Binary"
+      run: python build_rechnungstool.py
+      
+    - name: "📋 Collect Build Info"
+      run: |
+        echo "🏗️ Build Information" > build-info-intel.txt
+        echo "===================" >> build-info-intel.txt
+        echo "Architecture: $(uname -m)" >> build-info-intel.txt
+        echo "Python Version: $(python --version)" >> build-info-intel.txt
+        echo "macOS Version: $(sw_vers -productVersion)" >> build-info-intel.txt
+        echo "Build Date: $(date)" >> build-info-intel.txt
+        echo "" >> build-info-intel.txt
+        echo "📁 Binary Info:" >> build-info-intel.txt
+        file RechnungsTool_Distribution/RechnungsTool >> build-info-intel.txt
+        echo "" >> build-info-intel.txt
+        echo "📦 Directory Contents:" >> build-info-intel.txt
+        ls -la RechnungsTool_Distribution/ >> build-info-intel.txt
+        
+    - name: "📦 Create Intel Distribution"
+      run: |
+        cd RechnungsTool_Distribution
+        zip -r ../RechnungsTool-Intel-macOS.zip .
+        
+    - name: "⬆️ Upload Intel Artifacts"
+      uses: actions/upload-artifact@v3
+      with:
+        name: RechnungsTool-Intel
+        path: |
+          RechnungsTool-Intel-macOS.zip
+          build-info-intel.txt
+
+  build-apple-silicon:
+    name: "🚀 Apple Silicon Build (ARM64)"
+    runs-on: macos-14  # Apple Silicon M1 Runner
+    
+    steps:
+    - name: "📥 Checkout Repository"
+      uses: actions/checkout@v4
+      
+    - name: "🐍 Setup Python 3.11"
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        architecture: 'arm64'
+        
+    - name: "📦 Install Dependencies"
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+        
+    - name: "🔨 Build Apple Silicon Binary"
+      run: python build_apple_silicon.py
+      
+    - name: "📋 Collect Build Info"
+      run: |
+        echo "🚀 Build Information" > build-info-silicon.txt
+        echo "===================" >> build-info-silicon.txt
+        echo "Architecture: $(uname -m)" >> build-info-silicon.txt
+        echo "Python Version: $(python --version)" >> build-info-silicon.txt
+        echo "macOS Version: $(sw_vers -productVersion)" >> build-info-silicon.txt
+        echo "Build Date: $(date)" >> build-info-silicon.txt
+        echo "" >> build-info-silicon.txt
+        echo "📁 Binary Info:" >> build-info-silicon.txt
+        file RechnungsTool_Distribution_ARM64/RechnungsTool >> build-info-silicon.txt
+        echo "" >> build-info-silicon.txt
+        echo "📦 Directory Contents:" >> build-info-silicon.txt
+        ls -la RechnungsTool_Distribution_ARM64/ >> build-info-silicon.txt
+        
+    - name: "📦 Create Apple Silicon Distribution"
+      run: |
+        cd RechnungsTool_Distribution_ARM64
+        zip -r ../RechnungsTool-AppleSilicon-macOS.zip .
+        
+    - name: "⬆️ Upload Apple Silicon Artifacts"
+      uses: actions/upload-artifact@v3
+      with:
+        name: RechnungsTool-AppleSilicon
+        path: |
+          RechnungsTool-AppleSilicon-macOS.zip
+          build-info-silicon.txt
+
+  create-release:
+    name: "🎉 Create GitHub Release"
+    needs: [build-intel, build-apple-silicon]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')  # Nur bei Version-Tags
+    
+    steps:
+    - name: "📥 Checkout Repository"
+      uses: actions/checkout@v4
+      
+    - name: "📦 Download Intel Build"
+      uses: actions/download-artifact@v3
+      with:
+        name: RechnungsTool-Intel
+        path: ./intel-build
+        
+    - name: "📦 Download Apple Silicon Build"
+      uses: actions/download-artifact@v3
+      with:
+        name: RechnungsTool-AppleSilicon
+        path: ./silicon-build
+        
+    - name: "🎯 Create GitHub Release"
+      uses: softprops/action-gh-release@v1
+      with:
+        name: "RechnungsTool ${{ github.ref_name }}"
+        body: |
+          # 🧾 RechnungsTool ${{ github.ref_name }}
+          
+          **Professionelle deutsche Rechnungserstellung für macOS**
+          
+          ## 📦 Downloads
+          
+          Wählen Sie die passende Version für Ihren Mac:
+          
+          - **🖥️ Intel Macs** (x86_64) → `RechnungsTool-Intel-macOS.zip`
+          - **🚀 Apple Silicon** (M1/M2/M3) → `RechnungsTool-AppleSilicon-macOS.zip`
+          
+          > **💡 Tipp:** Intel-Version läuft auch auf Apple Silicon (via Rosetta 2)
+          
+          ## 🚀 Installation
+          
+          1. Entsprechende ZIP-Datei herunterladen
+          2. Entpacken durch Doppelklick
+          3. `INSTALL_UND_STARTEN.sh` ausführen (oder direkt `RechnungsTool` starten)
+          4. Bei macOS-Warnung: Rechtsklick → "Öffnen"
+          
+          ## ✨ Features
+          
+          - ✅ **PDF-Rechnungen** nach DIN 5008 Standard
+          - ✅ **XRechnung-XML** für öffentliche Auftraggeber
+          - ✅ **Kleinunternehmer-Regelung** nach § 19 UStG
+          - ✅ **Automatische Rechnungsnummern** (YYYY-MM-DD-##)
+          - ✅ **Logo-Integration** (logo.png)
+          - ✅ **Deutsche Standards** (§§ 14, 14a UStG konform)
+          
+          ## 🔧 Systemanforderungen
+          
+          - **macOS 10.13** (High Sierra) oder neuer
+          - **~50 MB** freier Speicherplatz
+          - Entsprechende **CPU-Architektur** (Intel oder Apple Silicon)
+          
+          ## 📞 Support
+          
+          Bei Fragen oder Problemen: [GitHub Issues](https://github.com/JP-Berges/E-Rechnungen_Schreiben/issues)
+          
+          ---
+          
+          **© 2025 JP Engineering** | Made with ❤️ in Germany
+        files: |
+          intel-build/RechnungsTool-Intel-macOS.zip
+          silicon-build/RechnungsTool-AppleSilicon-macOS.zip
+          intel-build/build-info-intel.txt
+          silicon-build/build-info-silicon.txt
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
