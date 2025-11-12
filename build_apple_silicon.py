@@ -151,15 +151,15 @@ exe = EXE(
         if result.returncode == 0:
             print("✅ ARM64-Kompilierung erfolgreich!")
             
-            # Erstelle Silicon-Distributions-Ordner
-            dist_dir = "RechnungsTool_Silicon_Native"
+            # Erstelle ARM64-Distributions-Ordner (GitHub Actions kompatibel)
+            dist_dir = "RechnungsTool_Distribution_ARM64"
             if os.path.exists(dist_dir):
                 shutil.rmtree(dist_dir)
             os.makedirs(dist_dir)
             
             # Kopiere die ARM64-Executable
             src_exe = os.path.join("dist", "RechnungsTool_Silicon")
-            dst_exe = os.path.join(dist_dir, "RechnungsTool_Silicon")
+            dst_exe = os.path.join(dist_dir, "RechnungsTool")  # Standardname für Konsistenz
             shutil.copy2(src_exe, dst_exe)
             
             # Executable ausführbar machen
